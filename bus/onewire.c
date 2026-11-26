@@ -111,3 +111,90 @@ uint8_t ONEWIRE_ReadByte(ONEWIRE_PINOUT* oneWire_Pinout)
 	return data;
 }
 
+
+/* ===== Recherche des composants presents sur le bus =====
+ * Chaque composant a un identifiant unique de 64 bits (ROM). La recherche parcourt ces identifiants
+ * bit par bit, comme un arbre binaire (note d'application Maxim AN187) :
+ *  - le maitre lit le bit, puis son complement : chaque composant encore en lice repond ;
+ *    la ligne etant en ET logique, on obtient :
+ *      1 puis 0 : tous les composants ont ce bit a 1
+ *      0 puis 1 : tous les composants ont ce bit a 0
+ *      0 puis 0 : embranchement, des composants ont 0 et d'autres 1
+ *      1 puis 1 : plus aucun composant ne repond
+ *  - le maitre ecrit la valeur choisie : seuls les composants qui ont ce bit restent en lice.
+ * A chaque appel, on reprend le chemin precedent et on prend l'autre branche au dernier
+ * embranchement pris a 0, jusqu'a avoir parcouru tous les composants. */
+
+
+/**
+ * Prepare une nouvelle recherche.
+ */
+void ONEWIRE_SearchInit(ONEWIRE_SEARCH* search)
+{
+	for (uint8_t i = 0; i < ONEWIRE_ROM_SIZE; i++)
+		search->rom[i] = 0;
+	search->lastDiscrepancy = 0;
+	search->lastDevice = 0;
+}
+
+
+/**
+ * Cherche le composant suivant sur le bus.
+ * @param command ONEWIRE_CMD_SEARCH_ROM pour tous les composants,
+ *                ONEWIRE_CMD_ALARM_SEARCH pour les composants en alarme seulement
+ * @return 1 si un composant a ete trouve (identifiant dans search->rom), 0 s'il n'y en a plus
+ */
+uint8_t ONEWIRE_SearchNext(ONEWIRE_PINOUT* oneWire_Pinout, ONEWIRE_SEARCH* search, uint8_t command)
+{
+	uint8_t lastZero = 0;
+	uint8_t bitPosition, byteIndex, bitMask;
+	uint8_t idBit, cmpBit, direction;
+
+	if (search->lastDevice)
+		return 0;
+
+	if (ONEWIRE_Reset(oneWire_Pinout) == 0) {
+		ONEWIRE_SearchInit(search);
+		return 0;
+	}
+	ONEWIRE_WriteByte(oneWire_Pinout, command);
+
+	for (bitPosition = 1; bitPosition <= 64; bitPosition++) {
+		byteIndex = (bitPosition - 1) / 8;
+		bitMask = 1 << ((bitPosition - 1) % 8);
+
+		idBit = ONEWIRE_ReadBit(oneWire_Pinout);
+		cmpBit = ONEWIRE_ReadBit(oneWire_Pinout);
+
+		if (idBit && cmpBit) {								// Plus aucun composant ne repond
+			ONEWIRE_SearchInit(search);
+			return 0;
+		}
+
+		if (idBit != cmpBit) {								// Tous les composants ont le meme bit
+			direction = idBit;
+		} else {											// Embranchement
+			if (bitPosition < search->lastDiscrepancy)
+				direction = (search->rom[byteIndex] & bitMask) ? 1 : 0;	// Meme chemin que la fois precedente
+			else
+				direction = (bitPosition == search->lastDiscrepancy);	// Autre branche au dernier embranchement
+			if (direction == 0)
+				lastZero = bitPosition;
+		}
+
+		if (direction) {
+			search->rom[byteIndex] |= bitMask;
+			ONEWIRE_WriteBit1(oneWire_Pinout);
+		} else {
+			search->rom[byteIndex] &= ~bitMask;
+			ONEWIRE_WriteBit0(oneWire_Pinout);
+		}
+	}
+
+	search->lastDiscrepancy = lastZero;
+	if (lastZero == 0)
+		search->lastDevice = 1;									// Plus d'embranchement a explorer
+
+	return 1;
+}
+
