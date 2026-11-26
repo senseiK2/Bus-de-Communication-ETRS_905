@@ -28,3 +28,33 @@ void TEST_OneWireReset(void)
 			printf("Reset : aucun capteur\r\n");
 	}
 }
+
+
+/**
+ * Test 1 du cahier de recette : reconnaissance des capteurs.
+ * Toutes les 2 secondes : recherche de tous les composants du bus (SEARCH ROM) et affichage
+ * de leur identifiant (code famille 0x28 pour un DS18B20).
+ * Attendu : 2 capteurs reconnus avec deux identifiants differents, puis 1 seul si on en debranche un.
+ */
+void TEST_OneWireSearch(void)
+{
+	ONEWIRE_SEARCH search;
+	uint8_t count;
+
+	printf("\r\n=== Test 1 : reconnaissance des capteurs ===\r\n");
+
+	while(1){
+		SYSTICK_Delay(2000);
+
+		count = 0;
+		ONEWIRE_SearchInit(&search);
+		while (ONEWIRE_SearchNext(&oneWire_Pinout, &search, ONEWIRE_CMD_SEARCH_ROM)) {
+			count++;
+			printf("  Capteur %d :", count);
+			for (int8_t i = ONEWIRE_ROM_SIZE - 1; i >= 0; i--)		// Affichage octet de poids fort en premier
+				printf(" %02X", search.rom[i]);
+			printf("  (%s)\r\n", (search.rom[0] == 0x28) ? "DS18B20" : "type inconnu");
+		}
+		printf("%d capteur(s) reconnu(s)\r\n\r\n", count);
+	}
+}

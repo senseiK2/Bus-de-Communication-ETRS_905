@@ -2,5 +2,6 @@
 #define TEST_ONEWIRE_H_
 
 void TEST_OneWireReset(void);
+void TEST_OneWireSearch(void);
 
 #endif
