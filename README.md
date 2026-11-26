@@ -11,7 +11,7 @@ Le firmware est organisé en couches, comme la figure 1 du sujet de TP. Chaque c
 ```
 ├── app/                 Application : main.c, puis app.c / app.h
 ├── lib/                 Librairies des composants (DS18B20, SX1272, PCF8583…)
-├── drivers/             Drivers des bus (One-Wire, SPI, I2C)
+├── bus/                 Drivers des bus (One-Wire, SPI, I2C)
 ├── low_level/
 │   └── stm32/           Drivers bas niveau GPIO, TIMER, USART
 ├── test/                Tests de validation de chaque couche (choix du test dans test.h)
