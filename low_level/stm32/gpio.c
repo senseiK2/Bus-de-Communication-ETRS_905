@@ -10,6 +10,11 @@ void GPIO_Init(void){
 	/* GPIO Init */
 	GPIOA->MODER |= OUTPUT_MODE <<10;		// PA5 Output LED
 	GPIOC->MODER |= INPUT_MODE	<< 26;		// PC13 Input Push-Button
+
+	GPIOA->MODER |= OUTPUT_MODE << 20;		// PA10 Output One-Wire
+	GPIOA->OTYPER |= 1 << 10;				// PA10 Open drain
+	GPIOA->PUPDR |= 1 << 20;				// PA10 Pull-up interne
+
 }
 
 

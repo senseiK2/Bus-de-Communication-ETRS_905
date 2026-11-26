@@ -11,9 +11,10 @@ Le firmware est organisé en couches, comme la figure 1 du sujet de TP. Chaque c
 ```
 ├── app/                 Application : main.c, puis app.c / app.h
 ├── lib/                 Librairies des composants (DS18B20, SX1272, PCF8583…)
-├── drivers/             Drivers des bus (One-Wire, SPI, I2C)
+├── bus/                 Drivers des bus (One-Wire, SPI, I2C)
 ├── low_level/
-│   └── stm32/           Drivers bas niveau GPIO, TIMER, USART (base du prof)
+│   └── stm32/           Drivers bas niveau GPIO, TIMER, USART
+├── test/                Tests de validation de chaque couche (choix du test dans test.h)
 ├── Drivers/CMSIS/       En-têtes CMSIS du STM32F446
 ├── Startup/             Fichier de démarrage généré par STM32CubeIDE
 ├── STM32F446RETX_FLASH.ld
@@ -22,7 +23,7 @@ Le firmware est organisé en couches, comme la figure 1 du sujet de TP. Chaque c
 
 ## Base de départ
 
-Les fichiers de `low_level/stm32/`, `app/main.c` et `Drivers/CMSIS/` proviennent sans modification du projet « from scratch » fourni par l'enseignant :
+Les fichiers de `low_level/stm32/`, `app/main.c` et `Drivers/CMSIS/` proviennent du projet « from scratch » fourni par l'enseignant :
 [SylvainMontagny/STM32F446_FromScratch](https://github.com/SylvainMontagny/STM32F446_FromScratch) (commit `1a2c3e6`).
 
 | Fichier | Rôle |
@@ -34,7 +35,7 @@ Les fichiers de `low_level/stm32/`, `app/main.c` et `Drivers/CMSIS/` proviennent
 | `main.h` | Constantes de mode des GPIO |
 | `syscalls.c`, `sysmem.c` | Appels système de la bibliothèque C |
 
-`app/main.c` est le seul fichier de la base qui évoluera : il appellera l'application.
+Modification apportée à la base : `app/main.c` initialise le DWT et appelle les tests (dossier `test/`), puis l'application.
 
 ## Ouvrir le projet
 
